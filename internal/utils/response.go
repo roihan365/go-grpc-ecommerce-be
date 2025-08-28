@@ -1,11 +1,21 @@
 package utils
 
-import "github.com/roihan365/go-grpc-ecommerce-be/pb/common"
+import (
+	"github.com/roihan365/go-grpc-ecommerce-be/pb/common"
+)
 
-func SuccessResponse() *common.BaseResponse {
+func SuccessResponse(message string) *common.BaseResponse {
 	return &common.BaseResponse{
 		Code:    200,
-		Message: "Success",
+		Message: message,
+	}
+}
+
+func BadRequestResponse(message string) *common.BaseResponse {
+	return &common.BaseResponse{
+		Code:    400,
+		Message: message,
+		IsError: true,
 	}
 }
 

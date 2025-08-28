@@ -8,7 +8,9 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/handler"
-	"github.com/roihan365/go-grpc-ecommerce-be/pb/service"
+	"github.com/roihan365/go-grpc-ecommerce-be/internal/repository"
+	"github.com/roihan365/go-grpc-ecommerce-be/internal/service"
+	"github.com/roihan365/go-grpc-ecommerce-be/pb/auth"
 	"github.com/roihan365/go-grpc-ecommerce-be/pkg/database"
 	"github.com/roihan365/go-grpc-ecommerce-be/pkg/grpcmiddleware"
 	"google.golang.org/grpc"
@@ -23,16 +25,18 @@ func main() {
 		log.Fatalf("Error when listening: %v", err)
 	}
 
-	database.ConnectDB(ctx, os.Getenv("DB_URI"))
+	db := database.ConnectDB(ctx, os.Getenv("DB_URI"))
 	log.Println("Connected to database")
 
-	serviceHandler := handler.NewServiceHandler()
+	authRepository := repository.NewAuthRepository(db)
+	authService := service.NewAuthService(authRepository)
+	authHandler := handler.NewAuthHandler(authService)
 
 	serv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(grpcmiddleware.ErrorMiddleware),
 	)
 
-	service.RegisterHelloWorldServer(serv, serviceHandler)
+	auth.RegisterAuthServiceServer(serv, authHandler)
 
 	// tidak disarankan untuk digunakan di production
 	if os.Getenv("ENVIRONTMENT") == "dev" {

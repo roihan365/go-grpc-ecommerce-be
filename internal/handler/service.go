@@ -26,7 +26,7 @@ func (sh *serviceHandler) HelloWorld(ctx context.Context, req *service.HelloWorl
 	}
 	return &service.HelloWorldResponse{
 		Message: fmt.Sprintf("Hello %s", req.Name),
-		Base:    utils.SuccessResponse(),
+		Base:    utils.SuccessResponse("Request success"),
 	}, nil
 }
 
