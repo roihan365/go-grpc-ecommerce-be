@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/entity"
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/repository"
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/utils"
@@ -15,15 +16,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	jwtEntity "github.com/roihan365/go-grpc-ecommerce-be/internal/entity/jwt"
 )
 
 type IAuthService interface {
 	Register(ctx context.Context, req *auth.RegisterRequest) (*auth.RegisterResponse, error)
 	Login(ctx context.Context, req *auth.LoginRequest) (*auth.LoginResponse, error)
+	Logout(ctx context.Context, req *auth.LogoutRequest) (*auth.LogoutResponse, error)
+	GetProfile(ctx context.Context, req *auth.GetProfileRequest) (*auth.GetProfileResponse, error)
 }
 
 type authService struct {
 	authRepository repository.IAUthRepository
+	cacheService   *gocache.Cache
 }
 
 func (as *authService) Register(ctx context.Context, req *auth.RegisterRequest) (*auth.RegisterResponse, error) {
@@ -77,11 +84,11 @@ func (as *authService) Login(ctx context.Context, req *auth.LoginRequest) (*auth
 	/// check apakah email ada
 	user, err := as.authRepository.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	if user == nil {
-		return  &auth.LoginResponse{
+		return &auth.LoginResponse{
 			Base: utils.BadRequestResponse("User is not registered"),
 		}, nil
 	}
@@ -96,15 +103,15 @@ func (as *authService) Login(ctx context.Context, req *auth.LoginRequest) (*auth
 	}
 	// generate jwt
 	now := time.Now()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, entity.JwtClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtEntity.JwtClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject: user.Id,
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour *24)),
-			IssuedAt: jwt.NewNumericDate(now),
+			Subject:   user.Id,
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * 24)),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
-		Email: user.Email,
+		Email:    user.Email,
 		FullName: user.FullName,
-		Role: user.RoleCode,
+		Role:     user.RoleCode,
 	})
 
 	secretKey := os.Getenv("JWT_SECRET")
@@ -114,14 +121,69 @@ func (as *authService) Login(ctx context.Context, req *auth.LoginRequest) (*auth
 	}
 	// kirim response
 	return &auth.LoginResponse{
-		Base: utils.SuccessResponse("Login success"),
+		Base:        utils.SuccessResponse("Login success"),
 		AccessToken: accessToken,
 	}, nil
 }
 
+// Logout implements IAuthService.
+func (as *authService) Logout(ctx context.Context, req *auth.LogoutRequest) (*auth.LogoutResponse, error) {
+	// get token dari metadata
+	jwtToken, err := jwtEntity.ParseTokenFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// kembalikan token hingga menjadi entity jwt
+	tokenClaim, err := jwtEntity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// masukkan token ke dalam memory db / cache
+	as.cacheService.Set(jwtToken, "", time.Duration(tokenClaim.ExpiresAt.Time.Unix()-time.Now().Unix())*time.Second)
+
+	// kirim response
+	return &auth.LogoutResponse{
+		Base: utils.SuccessResponse("Logout success"),
+	}, nil
+}
+
+func (as *authService) GetProfile(ctx context.Context, req *auth.GetProfileRequest) (*auth.GetProfileResponse, error) {
+	// get data token
+	claims, err := jwtEntity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// ambil data dari db
+	user, err := as.authRepository.GetUserByEmail(ctx, claims.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return  &auth.GetProfileResponse{
+			Base: utils.BadRequestResponse("User not found"),
+		}, nil
+	}
+	// buat response
+
+	// kirim response
+	return &auth.GetProfileResponse{
+		Base: utils.SuccessResponse("Get Profile success"),
+		UserId: user.Id,
+		FullName: user.FullName,
+		Email: user.Email,
+		RoleCode: user.RoleCode,
+		MemberSince: timestamppb.New(user.CreatedAt),
+	}, nil
+}
+
 // factory
-func NewAuthService(authRepository repository.IAUthRepository) IAuthService {
+func NewAuthService(authRepository repository.IAUthRepository, cacheService *gocache.Cache) IAuthService {
 	return &authService{
 		authRepository: authRepository,
+		cacheService:  cacheService,
 	}
 }
