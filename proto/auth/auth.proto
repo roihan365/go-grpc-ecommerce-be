@@ -42,10 +42,7 @@ message LogoutResponse {
     common.BaseResponse base = 1;
 }
 
-message GetProfileRequest {
-    string email = 1 [(buf.validate.field).string = { email:true min_len: 1, max_len: 255 }];
-    string password=2[(buf.validate.field).string = { min_len: 1, max_len: 255 }];
-}
+message GetProfileRequest {}
 
 message GetProfileResponse {
     common.BaseResponse base = 1;

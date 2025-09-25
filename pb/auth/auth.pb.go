@@ -322,8 +322,6 @@ func (x *LogoutResponse) GetBase() *common.BaseResponse {
 
 type GetProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -356,20 +354,6 @@ func (x *GetProfileRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetProfileRequest.ProtoReflect.Descriptor instead.
 func (*GetProfileRequest) Descriptor() ([]byte, []int) {
 	return file_auth_auth_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *GetProfileRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *GetProfileRequest) GetPassword() string {
-	if x != nil {
-		return x.Password
-	}
-	return ""
 }
 
 type GetProfileResponse struct {
@@ -480,11 +464,8 @@ const file_auth_auth_proto_rawDesc = "" +
 	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\"\x0f\n" +
 	"\rLogoutRequest\":\n" +
 	"\x0eLogoutResponse\x12(\n" +
-	"\x04base\x18\x01 \x01(\v2\x14.common.BaseResponseR\x04base\"_\n" +
-	"\x11GetProfileRequest\x12\"\n" +
-	"\x05email\x18\x01 \x01(\tB\f\xbaH\tr\a\x10\x01\x18\xff\x01`\x01R\x05email\x12&\n" +
-	"\bpassword\x18\x02 \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\bpassword\"\xe6\x01\n" +
+	"\x04base\x18\x01 \x01(\v2\x14.common.BaseResponseR\x04base\"\x13\n" +
+	"\x11GetProfileRequest\"\xe6\x01\n" +
 	"\x12GetProfileResponse\x12(\n" +
 	"\x04base\x18\x01 \x01(\v2\x14.common.BaseResponseR\x04base\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
