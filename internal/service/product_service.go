@@ -17,8 +17,10 @@ import (
 
 type IProductService interface {
 	CreateProduct(ctx context.Context, req *product.CreateProductRequest) (*product.CreateProductResponse, error)
+	DetailProduct(ctx context.Context, req *product.DetailProductRequest) (*product.DetailProductResponse, error)
 	EditProduct(ctx context.Context, req *product.EditProductRequest) (*product.EditProductResponse, error)
 	DeleteProduct(ctx context.Context, req *product.DeleteProductRequest) (*product.DeleteProductResponse, error)
+	ListProductAdmin(ctx context.Context, req *product.ListProductAdminRequest) (*product.ListProductAdminResponse, error)
 }
 
 type productService struct {
@@ -57,10 +59,45 @@ func (ps *productService) CreateProduct(ctx context.Context, req *product.Create
 	
 	err = ps.productRepository.CreateProduct(ctx, &productEntity)
 
+	if err != nil {
+		return nil, err
+	}
 
 	return &product.CreateProductResponse{
 		Base: utils.SuccessResponse("New Product Created"),
 		Id: productEntity.Id,
+	}, nil
+}
+
+func (ps *productService) DetailProduct(ctx context.Context, req *product.DetailProductRequest) (*product.DetailProductResponse, error) {
+	claims, err := jwtEntity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.Role != entity.UserRoleAdmin {
+		return nil, utils.UnauthenticatedResponse()
+	}
+
+	// validasi id apakah ada di db
+	productEntity, err := ps.productRepository.GetProductById(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if productEntity == nil {
+		return &product.DetailProductResponse{
+			Base: utils.NotFoundResponse("Product not found"),
+		}, nil
+	}
+
+	return &product.DetailProductResponse{
+		Base: utils.SuccessResponse("Product fetched"),
+		Id: productEntity.Id,
+		Name: productEntity.Name,
+		Description: productEntity.Description,
+		Price: productEntity.Price,
+		ImageFileName: productEntity.ImageFileName,
 	}, nil
 }
 
@@ -87,25 +124,25 @@ func (ps *productService) EditProduct(ctx context.Context, req *product.EditProd
 	}
 	
 	// kalau gambar di update, hapus gambar lama
-	if productEntity.ImageFileName != req.ImageFileName {
-		newImagePath := filepath.Join("storage", "product", req.ImageFileName)
-		_, err := os.Stat(newImagePath)
+	// if productEntity.ImageFileName != req.ImageFileName {
+	// 	newImagePath := filepath.Join("storage", "product", req.ImageFileName)
+	// 	_, err := os.Stat(newImagePath)
 
-		if err != nil {
-			if os.IsNotExist(err) {
-				return &product.EditProductResponse{
-					Base: utils.BadRequestResponse("image file not found"),
-				}, nil
-			}
-			return nil, err
-		} 
+	// 	if err != nil {
+	// 		if os.IsNotExist(err) {
+	// 			return &product.EditProductResponse{
+	// 				Base: utils.BadRequestResponse("image file not found"),
+	// 			}, nil
+	// 		}
+	// 		return nil, err
+	// 	} 
 
-		oldImagePath := filepath.Join("storage", "product", productEntity.ImageFileName)
-		err = os.Remove(oldImagePath)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// 	oldImagePath := filepath.Join("storage", "product", productEntity.ImageFileName)
+	// 	err = os.Remove(oldImagePath)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	// update ke db
 	newProduct := entity.Product{
@@ -155,7 +192,7 @@ func (ps *productService) DeleteProduct(ctx context.Context, req *product.Delete
 	err = ps.productRepository.DeleteProduct(ctx, req.Id, time.Now() ,claims.FullName)
 
 	// kalau gambar di update, hapus gambar lama
-	if productEntity.ImageFileName != "" {
+	if productEntity.ImageFileName != "" && productEntity.ImageFileName != "default.png" {
 		oldImagePath := filepath.Join("storage", "product", productEntity.ImageFileName)
 		err = os.Remove(oldImagePath)
 		if err != nil {
@@ -169,6 +206,39 @@ func (ps *productService) DeleteProduct(ctx context.Context, req *product.Delete
 
 	return &product.DeleteProductResponse{
 		Base: utils.SuccessResponse("Product has been deleted"),
+	}, nil
+}
+
+func (ps *productService) ListProductAdmin(ctx context.Context, req *product.ListProductAdminRequest) (*product.ListProductAdminResponse, error) {
+	claims, err := jwtEntity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.Role != entity.UserRoleAdmin {
+		return nil, utils.UnauthenticatedResponse()
+	}
+
+	products, err := ps.productRepository.ListProductAdmin(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var productItems []*product.ListProductAdminResponseItem
+	for _, p := range products {
+		productItems = append(productItems, &product.ListProductAdminResponseItem{
+			Id:            p.Id,
+			Name:          p.Name,
+			Description:   p.Description,
+			Price:         p.Price,
+			ImageFileName: p.ImageFileName,
+		})
+	}
+
+	return &product.ListProductAdminResponse{
+		Base: utils.SuccessResponse("Product successfully fetched"),
+		Data: productItems,
 	}, nil
 }
 

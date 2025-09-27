@@ -11,8 +11,10 @@ import "buf/validate/validate.proto";
 
 service ProductService {
     rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+    rpc DetailProduct(DetailProductRequest) returns (DetailProductResponse);
     rpc EditProduct(EditProductRequest) returns (EditProductResponse);
     rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+    rpc ListProductAdmin(ListProductAdminRequest) returns (ListProductAdminResponse);
 }
 
 message CreateProductRequest {
@@ -25,6 +27,18 @@ message CreateProductRequest {
 message CreateProductResponse {
     common.BaseResponse base = 1;
     string id = 2;
+}
+
+message DetailProductRequest {
+    string id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];}
+
+message DetailProductResponse {
+    common.BaseResponse base = 1;
+    string id = 2;
+    string name = 3;
+    string description = 4;
+    double price = 5;
+    string image_file_name = 6;
 }
 
 message EditProductRequest {
@@ -46,4 +60,19 @@ message DeleteProductRequest {
 
 message DeleteProductResponse {
     common.BaseResponse base = 1;
+}
+
+message ListProductAdminRequest {}
+
+message ListProductAdminResponseItem {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    double price = 4;
+    string image_file_name = 5;
+
+}
+message ListProductAdminResponse {
+    common.BaseResponse base = 1;
+    repeated ListProductAdminResponseItem data = 2;
 }

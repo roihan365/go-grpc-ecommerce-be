@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/entity"
@@ -14,6 +15,7 @@ type IProductRepository interface {
 	GetProductById(ctx context.Context, id string) (*entity.Product, error)
 	UpdateProduct(ctx context.Context, product *entity.Product) error
 	DeleteProduct(ctx context.Context, id string, deletedAt time.Time, deletedBy string) error
+	ListProductAdmin(ctx context.Context) ([]*entity.Product, error)
 }
 
 type productRepository struct {
@@ -71,24 +73,33 @@ func (pr *productRepository) GetProductById(ctx context.Context, id string) (*en
 }
 
 func (pr *productRepository) UpdateProduct(ctx context.Context, product *entity.Product) error {
-	_, err := pr.db.ExecContext(
-		ctx,
-		"UPDATE products SET name=$1, description=$2, price=$3, image_file_name=$4, updated_at=$5, updated_by=$6 WHERE id=$7",
-		product.Name,
-		product.Description,
-		product.Price,
-		product.ImageFileName,
-		product.UpdatedAt,
-		product.UpdatedBy,
-		product.Id,
-	)
+    res, err := pr.db.ExecContext(
+        ctx,
+        "UPDATE products SET name=$1, description=$2, price=$3, image_file_name=$4, updated_at=$5, updated_by=$6 WHERE id=$7",
+        product.Name,
+        product.Description,
+        product.Price,
+        product.ImageFileName,
+        product.UpdatedAt,
+        product.UpdatedBy,
+        product.Id,
+    )
 
-	if err != nil {
-		return err
-	}
+    if err != nil {
+        return err
+    }
 
-	return nil
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        return err
+    }
+    if rowsAffected == 0 {
+        return fmt.Errorf("no rows updated for product id %s", product.Id)
+    }
+
+    return nil
 }
+
 
 func (pr *productRepository) DeleteProduct(ctx context.Context, id string, deletedAt time.Time, deletedBy string) error {
 	_, err := pr.db.ExecContext(
@@ -104,6 +115,44 @@ func (pr *productRepository) DeleteProduct(ctx context.Context, id string, delet
 	}
 
 	return nil
+}
+
+func (pr *productRepository) ListProductAdmin(ctx context.Context) ([]*entity.Product, error) {
+	var products []*entity.Product
+	rows, err := pr.db.QueryContext(
+		ctx,
+		`SELECT id, name, description, price, image_file_name 
+		FROM products 
+		WHERE is_deleted=false`,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	for rows.Next() {
+		var productEntity entity.Product
+		err := rows.Scan(
+			&productEntity.Id,
+			&productEntity.Name,
+			&productEntity.Description,
+			&productEntity.Price,
+			&productEntity.ImageFileName,
+		)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		products = append(products, &productEntity)
+	}
+
+	return products, nil
 }
 
 func NewProductRepository(db *sql.DB) IProductRepository {

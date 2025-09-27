@@ -58,6 +58,28 @@ func (ph *productHandler) EditProduct(ctx context.Context, req *product.EditProd
 	return res, nil
 }
 
+func (ph *productHandler) DetailProduct(ctx context.Context, req *product.DetailProductRequest) (*product.DetailProductResponse, error) {
+	validationErrors, err := utils.CheckValidation(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if validationErrors != nil {
+		return &product.DetailProductResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+
+	// Process register
+	res, err := ph.productService.DetailProduct(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (ph *productHandler) DeleteProduct(ctx context.Context, req *product.DeleteProductRequest) (*product.DeleteProductResponse, error) {
 	validationErrors, err := utils.CheckValidation(req)
 
@@ -73,6 +95,27 @@ func (ph *productHandler) DeleteProduct(ctx context.Context, req *product.Delete
 
 	// Process register
 	res, err := ph.productService.DeleteProduct(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (ph *productHandler) ListProductAdmin(ctx context.Context, req *product.ListProductAdminRequest) (*product.ListProductAdminResponse, error) {
+	validationErrors, err := utils.CheckValidation(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if validationErrors != nil {
+		return &product.ListProductAdminResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+
+	res, err := ph.productService.ListProductAdmin(ctx, req)
 	if err != nil {
 		return nil, err
 	}
