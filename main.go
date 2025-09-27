@@ -13,6 +13,7 @@ import (
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/repository"
 	"github.com/roihan365/go-grpc-ecommerce-be/internal/service"
 	"github.com/roihan365/go-grpc-ecommerce-be/pb/auth"
+	"github.com/roihan365/go-grpc-ecommerce-be/pb/product"
 	"github.com/roihan365/go-grpc-ecommerce-be/pkg/database"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -39,11 +40,16 @@ func main() {
 	authService := service.NewAuthService(authRepository, cacheService)
 	authHandler := handler.NewAuthHandler(authService)
 
+	productRepository := repository.NewProductRepository(db)
+	productService := service.NewProductService(productRepository)
+	productHandler := handler.NewProductHandler(productService)
+
 	serv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(grpcmiddleware.ErrorMiddleware, authMiddleware.Middleware),
 	)
 
 	auth.RegisterAuthServiceServer(serv, authHandler)
+	product.RegisterProductServiceServer(serv, productHandler)
 
 	// tidak disarankan untuk digunakan di production
 	if os.Getenv("ENVIRONTMENT") == "dev" {
