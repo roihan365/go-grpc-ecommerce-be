@@ -36,6 +36,50 @@ func (ph *productHandler) CreateProduct(ctx context.Context, req *product.Create
 	return res, nil
 }
 
+func (ph *productHandler) EditProduct(ctx context.Context, req *product.EditProductRequest) (*product.EditProductResponse, error) {
+	validationErrors, err := utils.CheckValidation(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if validationErrors != nil {
+		return &product.EditProductResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+
+	// Process register
+	res, err := ph.productService.EditProduct(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (ph *productHandler) DeleteProduct(ctx context.Context, req *product.DeleteProductRequest) (*product.DeleteProductResponse, error) {
+	validationErrors, err := utils.CheckValidation(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if validationErrors != nil {
+		return &product.DeleteProductResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+
+	// Process register
+	res, err := ph.productService.DeleteProduct(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func NewProductHandler(productService service.IProductService) *productHandler {
 	return &productHandler{
 		productService: productService,

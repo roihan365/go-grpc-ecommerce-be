@@ -33,3 +33,11 @@ func ValidationErrorResponse(validationErrors []*common.ValidationError) *common
 func UnauthenticatedResponse() error {
 	return status.Errorf(codes.Unauthenticated, "Unauthenticated")
 }
+
+func NotFoundResponse(message string) *common.BaseResponse {
+	return &common.BaseResponse{
+		Code:    404,
+		Message: message,
+		IsError: true,
+	}
+}

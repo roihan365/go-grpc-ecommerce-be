@@ -11,16 +11,39 @@ import "buf/validate/validate.proto";
 
 service ProductService {
     rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+    rpc EditProduct(EditProductRequest) returns (EditProductResponse);
+    rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
 }
 
 message CreateProductRequest {
-    string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];;
-    string description = 2 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];;
-    double price = 3 [(buf.validate.field).double.gte = 0];;
-    string image_file_name = 4 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];;
+    string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+    string description = 2 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+    double price = 3 [(buf.validate.field).double.gte = 0];
+    string image_file_name = 4 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
 }
 
 message CreateProductResponse {
     common.BaseResponse base = 1;
     string id = 2;
+}
+
+message EditProductRequest {
+    string id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+    string name = 2 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+    string description = 3 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+    double price = 4 [(buf.validate.field).double.gte = 0];
+    string image_file_name = 5 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+}
+
+message EditProductResponse {
+    common.BaseResponse base = 1;
+    string id = 2;
+}
+
+message DeleteProductRequest {
+    string id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 255 }];
+}
+
+message DeleteProductResponse {
+    common.BaseResponse base = 1;
 }
